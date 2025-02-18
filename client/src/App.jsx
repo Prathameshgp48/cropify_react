@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar.jsx";
 import Records from "./Pages/Records.jsx";
 import 'react-toastify/dist/ReactToastify.css';
 import { Bounce, ToastContainer } from "react-toastify";
+import FertilizerRecomm from "./Pages/FertilizerRecomm.jsx";
 
 function App() {
   return (
@@ -16,8 +17,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/crop-recommendation" element={<Recommend />} />
-        <Route path="/disease-prediction" element={<Disease />} />
+        <Route path="/disease-prediction" element={<Disease />} />        
         <Route path="/records" element={<Records/>}/>
+        <Route path="/fertilizer-recommendation" element={<FertilizerRecomm />}/>
       </Routes>
       <ToastContainer
           position="top-right"
