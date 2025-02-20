@@ -104,26 +104,26 @@ def predict_image(img, model=disease_model):
 
 
 # Loading Hugging Face model ##
-model_name = "microsoft/DialoGPT-medium"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+# model_name = "microsoft/DialoGPT-medium"
+# tokenizer = AutoTokenizer.from_pretrained(model_name)
+# model = AutoModelForCausalLM.from_pretrained(model_name)
 
-if tokenizer.pad_token is None:
-    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+# if tokenizer.pad_token is None:
+#     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
-# chatbot function
-def chatbot_response(input_text):
-    inputs = tokenizer.encode(input_text, return_tensors="pt", padding = True, truncation = True) 
-    outputs = model.generate(
-        inputs,
-        max_length=1000,
-        pad_token_id=tokenizer.pad_token_id,
-        attention_mask=inputs.ne(0).long(),  # Pass attention mask here
-    )
+# # chatbot function
+# def chatbot_response(input_text):
+#     inputs = tokenizer.encode(input_text, return_tensors="pt", padding = True, truncation = True) 
+#     outputs = model.generate(
+#         inputs,
+#         max_length=1000,
+#         pad_token_id=tokenizer.pad_token_id,
+#         attention_mask=inputs.ne(0).long(),  # Pass attention mask here
+#     )
 
 
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return response
+#     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+#     return response
 
 # ===============================================================================================
 # ------------------------------------ FLASK APP -------------------------------------------------
@@ -210,8 +210,8 @@ def disease_prediction():
     return jsonify({'message': 'GET method not supported'}), 405
 
 ###CHAT ROUTE 
-@app.route('/chat', methods=['POST'])
-def chat():
+# @app.route('/chat', methods=['POST'])
+# def chat():
     try:
         # Retrieve data from request
         data = request.json

@@ -1,45 +1,56 @@
-import React, { useState } from "react"
-import SelectInput from "./SelectInput"
-import { Bounce, toast } from "react-toastify"
-import axios from "axios"
+import React, { useState } from "react";
+import SelectInput from "./SelectInput";
+import { Bounce, toast } from "react-toastify";
+import axios from "axios";
+import Modal from "./Modal";
 
 function Recommend() {
-  const [nitrogen, setNitrogen] = useState("")
-  const [phosphorous, setPhosphorous] = useState("")
-  const [potassium, setPotassium] = useState("")
-  const [ph, setPh] = useState("")
-  const [rainfall, setRainfall] = useState("")
-  const [state, setState] = useState("")
-  const [city, setCity] = useState("")
+  const [nitrogen, setNitrogen] = useState("");
+  const [phosphorous, setPhosphorous] = useState("");
+  const [potassium, setPotassium] = useState("");
+  const [ph, setPh] = useState("");
+  const [rainfall, setRainfall] = useState("");
+  const [state, setState] = useState("");
+  const [city, setCity] = useState("");
+  const [recommendedCrop, setRecommendedCrop] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    switch(name) {
+    const { name, value } = e.target;
+    switch (name) {
       case "Nitrogen":
-        setNitrogen(value || "")
-        break
+        setNitrogen(value || "");
+        break;
       case "Phosphorous":
-        setPhosphorous(value || "")
-        break
+        setPhosphorous(value || "");
+        break;
       case "Potassium":
-        setPotassium(value || "")
-        break
+        setPotassium(value || "");
+        break;
       case "PH":
-        setPh(value || "")
-        break
+        setPh(value || "");
+        break;
       case "Rainfall":
-        setRainfall(value || "")
-        break
+        setRainfall(value || "");
+        break;
       default:
-        break
+        break;
     }
-  }
+  };
 
-  const handleFormSubmit = async(e) => {
-    e.preventDefault()
-    
-    if(!nitrogen || !phosphorous || !potassium || !ph || !rainfall || !state || !city) {
-      toast.error('Please fill all the fields',{
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+
+    if (
+      !nitrogen ||
+      !phosphorous ||
+      !potassium ||
+      !ph ||
+      !rainfall ||
+      !state ||
+      !city
+    ) {
+      toast.error("Please fill all the fields", {
         position: "top-right",
         autoClose: 5000,
         closeOnClick: true,
@@ -49,35 +60,41 @@ function Recommend() {
         progress: undefined,
         theme: "colored",
         transition: Bounce,
-      })
-      return
+      });
+      return;
     }
 
-    console.log(nitrogen)
-    const formData = new FormData()
-    formData.append("N", nitrogen)
-    formData.append("P", phosphorous)
-    formData.append("K", potassium)
-    formData.append("ph", ph)
-    formData.append("rainfall", rainfall)
-    formData.append("state", state)
-    formData.append("city", city)
-    
+    const formData = new FormData();
+    formData.append("N", nitrogen);
+    formData.append("P", phosphorous);
+    formData.append("K", potassium);
+    formData.append("ph", ph);
+    formData.append("rainfall", rainfall);
+    formData.append("state", state);
+    formData.append("city", city);
+
     try {
-      const response = await axios.post("http://localhost:5000/crop-recommend", formData)
-      if(response.status === 200) {
-        console.log(response.data)
-        toast.success("Crop recommended successfully")
+      const response = await axios.post(
+        "http://localhost:5000/crop-recommend",
+        formData
+      );
+      if (response.status === 200) {
+        setRecommendedCrop(response.data.prediction); 
+        setIsModalOpen(true); 
+        toast.success("Crop recommended successfully");
       }
     } catch (error) {
-      console.log(error)
-      toast.error("Error in recommending crop")
+      console.log(error);
+      toast.error("Error in recommending crop");
     }
-  }
+  };
 
   return (
     <div className="bg-custom-color h-screen text-white flex justify-center items-center">
-      <form onSubmit={handleFormSubmit} className="flex flex-col items-center space-y-4 w-3/2 h-auto bg-white bg-opacity-75 backdrop-filter backdrop-blur-md px-4 py-6 rounded-lg shadow-md">
+      <form
+        onSubmit={handleFormSubmit}
+        className="flex flex-col items-center space-y-4 w-3/2 h-auto bg-white bg-opacity-75 backdrop-filter backdrop-blur-md px-4 py-6 rounded-lg shadow-md"
+      >
         <h2 className="text-2xl text-green-700 font-poppins font-bold mb-4">
           Find Ideal Crop
         </h2>
@@ -140,9 +157,26 @@ function Recommend() {
             placeholder="Enter Rainfall"
           />
         </div>
-        <SelectInput state={state} city={city} setState={setState} setCity={setCity}/>
-        <button className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full" type="submit">Recommend Crop</button>
+        <SelectInput
+          state={state}
+          city={city}
+          setState={setState}
+          setCity={setCity}
+        />
+        <button
+          className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full"
+          type="submit"
+        >
+          Recommend Crop
+        </button>
       </form>
+
+      {/* Modal for Recommendation Result */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        recommendation={recommendedCrop}
+      />
     </div>
   );
 }
