@@ -1,24 +1,23 @@
 # Importing essential libraries and modules
-from flask import Flask, render_template, request, redirect, send_from_directory, jsonify
-from markupsafe import Markup
-import numpy as np
+from flask import Flask, request, jsonify
+import logging
 import pandas as pd
-import requests
-import config
+from flask_cors import CORS
+from utils.fertilizer import fertilizer_dic
 import joblib
-import io
+import os
 import torch
 from torchvision import transforms
 from PIL import Image
 from utils.model import ResNet9
 from utils.disease import disease_dic
-from utils.fertilizer import fertilizer_dic
-import os
-import logging  # Add logging for debugging
-from flask_cors import CORS
-from transformers import AutoTokenizer, AutoModelForCausalLM
 
-# ==============================================================================================
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+
+# Initialize Flask app
+app = Flask(__name__, static_folder='../client/dist', static_url_path='')
+CORS(app, origins=["http://localhost:5173"])
 
 # -------------------------LOADING THE TRAINED MODELS -----------------------------------------------
 
@@ -50,7 +49,10 @@ disease_model.eval()
 base_dir = os.path.dirname(os.path.abspath(__file__))
 crop_recommendation_model_path = os.path.join(base_dir, 'models', 'RandomForest.joblib')
 crop_recommendation_model = joblib.load(crop_recommendation_model_path)
+print(" Server running on http://localhost:5173")
+# ------------------------------------ FUNCTIONS ------------------------------------
 
+<<<<<<< HEAD
 # Set up logging for debugging
 logging.basicConfig(level=logging.INFO)
 
@@ -212,32 +214,79 @@ def disease_prediction():
 ###CHAT ROUTE 
 # @app.route('/chat', methods=['POST'])
 # def chat():
+=======
+def recommend_fertilizer(N, P, K, crop):
+>>>>>>> 2244d8ad5f6849224f622274fe2b0b1d0094585c
     try:
-        # Retrieve data from request
-        data = request.json
+        recommendation = ""
         
-        # Ensure that the necessary keys are present in the input data
-        user_message = data.get("message", "").strip()
-        prediction_context = data.get("prediction", "No specific context provided.")
+        # Determine if N, P, K are high or low
+        if N > 50:  # Adjust threshold based on your data
+            recommendation += fertilizer_dic.get('NHigh', "No recommendation available for high Nitrogen.")
+        else:
+            recommendation += fertilizer_dic.get('Nlow', "No recommendation available for low Nitrogen.")
         
-        # Check for empty user message
-        if not user_message:
-            return jsonify({"error": "Message is required"}), 400
+        if P > 50:  # Adjust threshold based on your data
+            recommendation += "<br/><br/>" + fertilizer_dic.get('PHigh', "No recommendation available for high Phosphorus.")
+        else:
+            recommendation += "<br/><br/>" + fertilizer_dic.get('Plow', "No recommendation available for low Phosphorus.")
         
-        # Construct the input text for the model
-        input_text = f"Context: {prediction_context}. User: {user_message}"
+        if K > 50:  # Adjust threshold based on your data
+            recommendation += "<br/><br/>" + fertilizer_dic.get('KHigh', "No recommendation available for high Potassium.")
+        else:
+            recommendation += "<br/><br/>" + fertilizer_dic.get('Klow', "No recommendation available for low Potassium.")
+        
+        return recommendation.strip() if recommendation else f"Your soil has optimal nutrient levels for {crop}."
+    
+    except Exception as e:
+        logging.error(f"Error in fertilizer recommendation: {e}")
+        return "Error generating fertilizer recommendation."
 
-        # Get response from chatbot
-        response = chatbot_response(input_text)
-        
-        # Return the response as a JSON object
-        return jsonify({"response": response}), 200
+# ------------------------------------ FLASK ROUTES ------------------------------------
+
+@app.route('/fertilizer-recommend', methods=['POST'])
+def fertilizer_recommend():
+    try:
+        data = request.json
+        N = int(data.get("N", 0))
+        P = int(data.get("P", 0))
+        K = int(data.get("K", 0))
+        crop = data.get("crop", "").strip().lower()
+
+        if not crop:
+            return jsonify({"error": "Crop name is required."}), 400
+
+        recommendation = recommend_fertilizer(N, P, K, crop)
+        return jsonify({"recommendation": recommendation})
     
     except Exception as e:
         logging.error(f"Error processing request: {str(e)}")
-        # Return a generic error message for unexpected issues
-        return jsonify({"error": f"Error generating response: {str(e)}"}), 500
+        return jsonify({"error": "Error generating recommendation."}), 500
 
-# ===============================================================================================
+@app.route('/crop-recommend', methods=['POST'])
+def crop_prediction():
+    try:
+        data = request.json
+        N = int(data.get("N", 0))
+        P = int(data.get("P", 0))
+        K = int(data.get("K", 0))
+        temperature = float(data.get("temperature", 0))
+        humidity = float(data.get("humidity", 0))
+        ph = float(data.get("ph", 0))
+        rainfall = float(data.get("rainfall", 0))
+
+        columns = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
+        data = pd.DataFrame([[N, P, K, temperature, humidity, ph, rainfall]], columns=columns)
+        prediction = crop_recommendation_model.predict(data)[0]
+
+        return jsonify({'prediction': prediction})
+    except Exception as e:
+        logging.error(f"Error processing request: {str(e)}")
+        return jsonify({"error": "Error generating crop recommendation."}), 500
+
+@app.route('/')
+def serve_home():
+    return jsonify({"message": "Welcome to the Crop and Fertilizer Recommendation API!"})
+
 if __name__ == '__main__':
     app.run(debug=False)

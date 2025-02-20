@@ -1,0 +1,6 @@
+transformer
+flask_cors
+flask 
+pandas
+numpy
+scikit-learn
