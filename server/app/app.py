@@ -11,6 +11,13 @@ from torchvision import transforms
 from PIL import Image
 from utils.model import ResNet9
 from utils.disease import disease_dic
+import io
+from markupsafe import Markup
+from utils.segment import process_leaf_image
+import cv2
+import numpy as np
+from werkzeug.utils import secure_filename
+import base64
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -52,7 +59,7 @@ crop_recommendation_model = joblib.load(crop_recommendation_model_path)
 print(" Server running on http://localhost:5173")
 # ------------------------------------ FUNCTIONS ------------------------------------
 
-<<<<<<< HEAD
+# <<<<<<< HEAD
 # Set up logging for debugging
 logging.basicConfig(level=logging.INFO)
 
@@ -190,33 +197,134 @@ def crop_prediction():
 
 
 # Render disease prediction result page
+# @app.route('/disease-predict', methods=['POST'])
+# def disease_prediction():
+#     title = 'Cropify - Disease Detection'
+
+#     if request.method == 'POST':
+#         if 'file' not in request.files:
+#             return jsonify({'error': 'No file part in the request'}), 400
+        
+#         file = request.files.get('file')
+#         print(file)
+#         if not file:
+#             return jsonify({'error': 'No file selected'}), 400
+#         try:
+#             img = file.read()
+#             prediction = predict_image(img)
+#             prediction = Markup(str(disease_dic[prediction]))
+#             # segmented_img = process_leaf_image(img)
+#             # print(segmented_img)
+#             return jsonify({'prediction': prediction})
+#         except Exception as e:
+#             logging.error(f"Error during prediction: {e}")
+#             return jsonify({'error': 'Prediction error! Please try again.'})
+
+#     return jsonify({'message': 'GET method not supported'}), 405
+
+# temp implemenation
+def process_leaf_image(image_bytes):
+    """
+    Processes a leaf image from bytes by removing the background and highlighting diseased areas.
+
+    Args:
+        image_bytes (bytes): Image file in bytes.
+
+    Returns:
+        tuple: (background_removed, disease_highlighted)
+    """
+    # Convert bytes to numpy array
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    if image is None:
+        raise ValueError("Error: Unable to decode image")
+
+    # Resize for easier processing
+    image = cv2.resize(image, (600, 400))
+
+    # Apply GrabCut for background removal
+    mask = np.zeros(image.shape[:2], np.uint8)
+    bgd_model = np.zeros((1, 65), np.float64)
+    fgd_model = np.zeros((1, 65), np.float64)
+    rect = (10, 10, image.shape[1] - 10, image.shape[0] - 10)
+
+    cv2.grabCut(image, mask, rect, bgd_model, fgd_model, 5, cv2.GC_INIT_WITH_RECT)
+
+    # Refine the mask
+    mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
+    background_removed = image * mask2[:, :, np.newaxis]
+
+    # Convert to HSV for disease highlighting
+    hsv = cv2.cvtColor(background_removed, cv2.COLOR_BGR2HSV)
+
+    # Define color range for disease detection (brown/yellow patches)
+    lower_disease = np.array([10, 100, 20])
+    upper_disease = np.array([30, 255, 255])
+    disease_mask = cv2.inRange(hsv, lower_disease, upper_disease)
+
+    # Apply morphological operations to reduce noise
+    kernel = np.ones((5, 5), np.uint8)
+    disease_mask = cv2.morphologyEx(disease_mask, cv2.MORPH_CLOSE, kernel)
+
+    # Highlight diseased areas in red
+    disease_highlighted = background_removed.copy()
+    disease_highlighted[disease_mask > 0] = [0, 0, 255]
+
+    return background_removed, disease_highlighted
+
 @app.route('/disease-predict', methods=['POST'])
 def disease_prediction():
-    title = 'Cropify - Disease Detection'
+    """
+    Endpoint to predict disease from an uploaded crop image.
 
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file part in the request'}), 400
-        file = request.files.get('file')
-        if not file:
-            return jsonify({'error': 'No file selected'}), 400
-        try:
-            img = file.read()
-            prediction = predict_image(img)
-            prediction = Markup(str(disease_dic[prediction]))
-            return jsonify({'prediction': prediction})
-        except Exception as e:
-            logging.error(f"Error during prediction: {e}")
-            return jsonify({'error': 'Prediction error! Please try again.'})
+    Returns:
+        JSON response containing the prediction and processed images.
+    """
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
 
-    return jsonify({'message': 'GET method not supported'}), 405
+    file = request.files.get('file')
+    if not file:
+        return jsonify({'error': 'No file selected'}), 400
+
+    try:
+        img_bytes = file.read()
+
+        prediction = predict_image(img_bytes)
+        prediction = Markup(str(disease_dic[prediction]))
+        
+        # Process the leaf image
+        bg_removed, disease_highlighted = process_leaf_image(img_bytes)
+
+        # Encode images to Base64 for response
+        _, buffer_bg = cv2.imencode('.jpg', bg_removed)
+        _, buffer_disease = cv2.imencode('.jpg', disease_highlighted)
+
+        # bg_removed_base64 = buffer_bg.tobytes()
+        # disease_highlighted_base64 = buffer_disease.tobytes()
+
+        bg_removed_base64 = base64.b64encode(buffer_bg).decode('utf-8')
+        disease_highlighted_base64 = base64.b64encode(buffer_disease).decode('utf-8')
+
+        return jsonify({
+            'prediction': prediction,  # Disease name
+            'background_removed': f"data:image/jpeg;base64,{bg_removed_base64}",
+            'disease_highlighted': f"data:image/jpeg;base64,{disease_highlighted_base64}"
+        })
+
+    
+    
+    except Exception as e:
+        logging.error(f"Error during prediction: {e}")
+        return jsonify({'error': 'Prediction error! Please try again.'}), 500
 
 ###CHAT ROUTE 
 # @app.route('/chat', methods=['POST'])
 # def chat():
-=======
+
 def recommend_fertilizer(N, P, K, crop):
->>>>>>> 2244d8ad5f6849224f622274fe2b0b1d0094585c
+# >>>>>>> 2244d8ad5f6849224f622274fe2b0b1d0094585c
     try:
         recommendation = ""
         
@@ -263,8 +371,8 @@ def fertilizer_recommend():
         logging.error(f"Error processing request: {str(e)}")
         return jsonify({"error": "Error generating recommendation."}), 500
 
-@app.route('/crop-recommend', methods=['POST'])
-def crop_prediction():
+# @app.route('/crop-recommend', methods=['POST'])
+# def crop_prediction():
     try:
         data = request.json
         N = int(data.get("N", 0))
