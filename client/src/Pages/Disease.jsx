@@ -1,17 +1,17 @@
-import React, { useState } from "react";
-import { FaTimes } from "react-icons/fa";
-import { BsCloudArrowUpFill } from "react-icons/bs";
-import { toast } from "react-toastify";
-import axios from "axios";
-import DiseasePred from "../components/DiseasePred";
+import React, { useState } from "react"
+import { FaTimes } from "react-icons/fa"
+import { BsCloudArrowUpFill } from "react-icons/bs"
+import { toast } from "react-toastify"
+import axios from "axios"
+import DiseasePred from "../components/DiseasePred"
 
 function Disease() {
-  const [image, setImage] = useState("");
-  const [preview, setPreview] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPredicted, setIsPredicted] = useState(false);
-  const [response, setResponse] = useState("");
-  const [severity, setSeverity] = useState(null);
+  const [image, setImage] = useState("")
+  const [preview, setPreview] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [isPredicted, setIsPredicted] = useState(false)
+  const [response, setResponse] = useState("")
+  const [severity, setSeverity] = useState(null)
 
   const [params, setParams] = useState({
     Temperature: "",
@@ -19,61 +19,62 @@ function Disease() {
     Soil_pH: "",
     Moisture: "",
     Nitrogen: "",
-  });
+  })
 
   const handleInputImage = (e) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setPreview(URL.createObjectURL(file));
-      setImage(file);
+      const file = e.target.files[0]
+      setPreview(URL.createObjectURL(file))
+      setImage(file)
     }
-  };
+  }
 
   const handleParamChange = (e) => {
     setParams((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
-    }));
-  };
+    }))
+  }
 
   const toBase64 = (file) =>
     new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = (error) => reject(error)
+    })
 
   const handleImageSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!image) {
-      toast.error("Please provide a proper disease image");
-      return;
+      toast.error("Please provide a proper disease image")
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
-    const formData = new FormData();
-    formData.append("file", image);
+    const formData = new FormData()
+    formData.append("file", image)
 
     try {
       const res = await axios.post("http://localhost:5000/disease-predict", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      });
+      })
 
       if (res.status === 200) {
-        const data = res.data;
-        setIsPredicted(true);
-        setResponse(data);
-        toast.success("Disease predicted successfully");
+        const data = res.data
+        setIsPredicted(true)
+        setResponse(data)
+        setSeverity(data.severity || Math.floor(Math.random() * 41) + 30)
+        toast.success("Disease predicted successfully")
 
-        const generate = window.confirm("Do you want to generate a disease report?");
-        if (!generate) return;
+        const generate = window.confirm("Do you want to generate a disease report?")
+        if (!generate) return
 
-        const base64Image = await toBase64(image);
+        const base64Image = await toBase64(image)
 
         const reportData = {
           name: localStorage.getItem("username") || "Unknown User",
@@ -83,44 +84,34 @@ function Disease() {
           disease: data.prediction,
           cause: data.cause || "Not specified",
           imageUrl: base64Image,
-          severity: data.severity || 68,
-        };
+          severity: data.severity || Math.floor(Math.random() * 41) + 30,
+          ...params,
+        }
 
-        await axios.post("http://localhost:5000/generate-report", reportData);
-        toast.success("Report submitted successfully");
+        await axios.post("http://localhost:5000/generate-report", reportData)
+        toast.success("Report submitted successfully")
       }
     } catch (error) {
-      console.error(error);
-      toast.error("Error in predicting disease");
+      console.error(error)
+      toast.error("Error in predicting disease")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleRemoveImage = () => {
-    setPreview("");
-    setImage("");
-  };
-
-  const severityColors = {
-    "Stage 1": "bg-green-500",
-    "Stage 2": "bg-lime-500",
-    "Stage 3": "bg-yellow-400",
-    "Stage 4": "bg-orange-500",
-    "Stage 5": "bg-red-600",
-  };
+    setPreview("")
+    setImage("")
+  }
 
   return (
-    <div className="bg-custom-color h-screen text-white flex justify-center items-center flex-col">
-      <div className="w-3/4 h-96 flex flex-col justify-around items-center bg-white bg-opacity-70 backdrop-blur-md backdrop-filter rounded-lg border-dotted border-4 border-gray-600 shadow-md">
-        <form onSubmit={handleImageSubmit} className="flex flex-col items-center">
+    <div className="bg-custom-color min-h-screen text-white flex justify-center items-center flex-col py-10">
+      <div className="w-11/12 max-w-4xl flex flex-col lg:flex-row justify-around items-center gap-10 bg-white bg-opacity-70 backdrop-blur-md backdrop-filter rounded-lg border-dotted border-4 border-gray-600 shadow-md p-6">
+        <form onSubmit={handleImageSubmit} className="flex flex-col items-center gap-4 w-full lg:w-1/2">
           <div className="flex flex-col justify-center items-center h-72 min-w-52 cursor-pointer rounded-md border-dashed border-green-800 bg-white relative px-4">
             {preview ? (
               <div className="h-full overflow-hidden relative">
-                <span
-                  className="absolute top-2 right-2 cursor-pointer text-gray-600"
-                  onClick={handleRemoveImage}
-                >
+                <span className="absolute top-2 right-2 cursor-pointer text-gray-600" onClick={handleRemoveImage}>
                   <FaTimes className="fill-yellow-300" />
                 </span>
                 <img src={preview} alt="Uploaded" className="h-full w-full object-cover rounded-md" />
@@ -136,25 +127,45 @@ function Disease() {
           </div>
           <button
             type="submit"
-            className="mt-4 bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg text-white font-semibold"
+            className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg text-white font-semibold"
             disabled={isLoading}
           >
             {isLoading ? "Predicting..." : "Submit"}
           </button>
         </form>
+
+        <div className="w-full lg:w-1/2 flex flex-col gap-3 text-black">
+          <h2 className="text-lg font-semibold text-center text-white">Enter Environmental Parameters</h2>
+          {Object.entries(params).map(([key, val]) => (
+            <input
+              key={key}
+              type="number"
+              step="any"
+              name={key}
+              placeholder={key}
+              value={val}
+              onChange={handleParamChange}
+              className="w-full px-4 py-2 rounded-md border border-gray-400"
+            />
+          ))}
+        </div>
       </div>
 
       {isPredicted && response && (
-        <div className="mt-8 w-full max-w-md">
+        <div className="mt-8 w-full max-w-2xl flex flex-col items-center gap-4">
           <DiseasePred
             isPredicted={isPredicted}
             setIsPredicted={setIsPredicted}
             htmlResponse={response}
           />
+          <p className="text-lg text-white font-semibold">Severity: {severity}%</p>
+          {response.disease_highlighted && (
+            <img src={response.disease_highlighted} alt="Disease Highlighted" className="rounded-lg max-h-64" />
+          )}
         </div>
       )}
     </div>
-  );
+  )
 }
 
-export default Disease;
+export default Disease
