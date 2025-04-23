@@ -449,7 +449,7 @@ def login():
     data = request.json
     email = data.get('email')
     password = data.get('password')
-
+    
     user = users_collection.find_one({'email': email})
     if not user or not check_password_hash(user['password'], password):
         return jsonify({'error': 'Invalid email or password'}), 401
@@ -459,7 +459,11 @@ def login():
         'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1)
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm='HS256')
-    return jsonify({'token': token}), 200
+
+    return jsonify({
+        'token': token,
+        'name': user.get('name')  # Send name to frontend
+    }), 200
 
 @app.route('/generate-report', methods=['POST'])
 def generate_report():
