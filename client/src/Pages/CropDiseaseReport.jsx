@@ -27,9 +27,9 @@ export default function CropDiseaseReport({ report }) {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 mt-32">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }} 
-        animate={{ opacity: 1, y: 0 }} 
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         className="max-w-4xl mx-auto"
       >
         <Card className="shadow-xl border rounded-2xl p-4">
@@ -47,15 +47,22 @@ export default function CropDiseaseReport({ report }) {
                 <p><strong>Name:</strong> {reportData.name}</p>
                 <p><strong>Location:</strong> {reportData.location}</p>
                 <p><strong>Time of Report:</strong> {reportData.time}</p>
-                <p><strong>Plant Type:</strong> {reportData.plant}</p>
+                {/* <p><strong>Plant Type:</strong> {reportData.plant}</p> */}
                 <p><strong>Disease Detected:</strong> <span className="text-red-600 font-medium">{reportData.disease}</span></p>
-                <p><strong>Cause:</strong> {reportData.cause}</p>
+                
+                <div>
+                  {/* <strong>Cause:</strong> */}
+                  {/* <div
+                    className="mt-1 text-gray-700 whitespace-pre-wrap leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: reportData.cause }}
+                  /> */}
+                </div>
               </div>
 
               <div className="flex flex-col items-center justify-center space-y-4">
-                <img 
-                  src={reportData.image} 
-                  alt="Disease Example" 
+                <img
+                  src={reportData.image}
+                  alt="Disease Example"
                   className="w-full h-64 object-cover rounded-xl shadow-md border"
                 />
                 <div className="w-full">
@@ -73,7 +80,7 @@ export default function CropDiseaseReport({ report }) {
             </div>
 
             <div className="mt-6 text-right">
-              <Button className="bg-green-600 hover:bg-green-700">Download PDF</Button>
+              {/* <Button className="bg-green-600 hover:bg-green-700">Download PDF</Button> */}
             </div>
           </CardContent>
         </Card>

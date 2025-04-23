@@ -2,12 +2,14 @@ import axios from 'axios';
 import { useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLogin, setIsLogin] = useState(true);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,7 +19,16 @@ function Login() {
     try {
       const res = await axios.post(`http://localhost:5000/${endpoint}`, payload);
       localStorage.setItem('token', res.data.token);
+
+      const userName = isLogin ? res.data.name : name;
+      localStorage.setItem('username', "Nimish Padwal");
+
       toast.success(`${isLogin ? 'Login' : 'Signup'} successful!`);
+
+      setTimeout(() => {
+        navigate('/crop-recommendation');
+        window.location.reload(); // reload the page
+      }, 1500); // wait for the toast to appear
     } catch (err) {
       toast.error(`${isLogin ? 'Login' : 'Signup'} failed!`);
     }
