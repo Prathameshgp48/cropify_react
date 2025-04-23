@@ -5,11 +5,13 @@ import Home from "./Pages/Home.jsx";
 import Recommend from "./Pages/Recommend/Recommend.jsx";
 import Disease from "./Pages/Disease.jsx";
 import Navbar from "./components/Navbar.jsx";
-import Records from "./Pages/Records.jsx";
+// import Records from "./Pages/Records.jsx";
 import 'react-toastify/dist/ReactToastify.css';
 import { Bounce, ToastContainer } from "react-toastify";
 import FertilizerRecomm from "./Pages/FertilizerRecomm.jsx";
-import LoginForm from "./Pages/LoginForm.jsx";
+import Login from "./Pages/Login.jsx";
+import CropDiseaseReport from "./Pages/CropDiseaseReport.jsx";
+import Reports from "./Pages/Reports.jsx";
 
 function App() {
   return (
@@ -19,9 +21,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/crop-recommendation" element={<Recommend />} />
         <Route path="/disease-prediction" element={<Disease />} />        
-        <Route path="/records" element={<Records/>}/>
+        <Route path="/records" element={<Reports/>}/>
         <Route path="/fertilizer-recommendation" element={<FertilizerRecomm />}/>
-        <Route path="/user-login" element={<LoginForm/>}/>
+        <Route path="/login" element={<Login />}/>
+        <Route path="/disease-report" element={<CropDiseaseReport />}/>
       </Routes>
       <ToastContainer
           position="top-right"

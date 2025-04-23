@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Logo from "../logo.svg";
-import { Link, useMatch } from "react-router-dom";
+import { Link, useMatch, useNavigate } from "react-router-dom";
 
 function Navbar() {
   const isHome = useMatch("/");
@@ -8,7 +8,20 @@ function Navbar() {
   const isDisease = useMatch("/disease-prediction");
   const isRecords = useMatch("/records");
   const isFertilizer = useMatch("/fertilizer-recommendation");
-  const isLoginForm = useMatch("/user-login");
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsLoggedIn(!!token);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    navigate("/login");
+  };
 
   return (
     <div className="fixed top-4 left-4 right-4 rounded-lg shadow-mg flex justify-center items-center h-20 bg-white bg-opacity-75 backdrop-filter backdrop-blur-md p-4 z-50">
@@ -42,6 +55,7 @@ function Navbar() {
         >
           Disease
         </Link>
+
         <Link
           to="/login"
           className={`font-poppins text-xl font-bold hover:text-yellow-600 cursor-pointer ${
@@ -50,6 +64,7 @@ function Navbar() {
         >
           Fertilizer
         </Link>
+
         <Link
           to="/records"
           className={`font-poppins text-xl font-bold hover:text-yellow-600 cursor-pointer ${
@@ -58,14 +73,22 @@ function Navbar() {
         >
           Records
         </Link>
-        <Link
-          to="/user-login"
-          className={`font-poppins text-xl font-bold hover:text-yellow-600 cursor-pointer ${
-            isLoginForm ? "text-yellow-600" : ""
-          }`}
-        >
-          Login
-        </Link>
+
+        {isLoggedIn ? (
+          <button
+            onClick={handleLogout}
+            className="font-poppins text-xl font-bold text-red-600 hover:text-red-800 cursor-pointer"
+          >
+            Logout
+          </button>
+        ) : (
+          <Link
+            to="/login"
+            className={`font-poppins text-xl font-bold hover:text-yellow-600 cursor-pointer`}
+          >
+            Login
+          </Link>
+        )}
       </div>
     </div>
   );
