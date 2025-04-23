@@ -16,6 +16,7 @@ def ConvBlock(in_channels, out_channels, pool=False):
 class ResNet9(nn.Module):
     def __init__(self, in_channels, num_diseases):
         super().__init__()
+        print(num_diseases)
         
         self.conv1 = ConvBlock(in_channels, 64)
         self.conv2 = ConvBlock(64, 128, pool=True) # out_dim : 128 x 64 x 64 

@@ -57,7 +57,7 @@ function Navbar() {
         </Link>
 
         <Link
-          to="/fertilizer-recommendation"
+          to="/login"
           className={`font-poppins text-xl font-bold hover:text-yellow-600 cursor-pointer ${
             isFertilizer ? "text-yellow-600" : ""
           }`}

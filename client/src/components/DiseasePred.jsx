@@ -6,8 +6,8 @@ function DiseasePred({ htmlResponse, setIsPredicted, isPredicted }) {
   const [htmlContent, setHtmlContent] = useState('')
 
   useEffect(() => {
-    console.log('htmlResponse:', htmlResponse) // Debugging
-    console.log('isPredicted:', isPredicted) // Debugging
+    console.log('htmlResponse:', htmlResponse) 
+    console.log('isPredicted:', isPredicted) 
     if (isPredicted && htmlResponse?.prediction) {
       setHtmlContent(htmlResponse.prediction)
     }

@@ -480,5 +480,147 @@ disease_dic = {
         <br/>2. Inspect transplants prior to purchase. Choose only transplants showing no clear symptoms.
         
         <br/>3. Avoid planting in fields where tomato root debris is present, as the virus can survive long-term in roots.
-        <br/>4. Wash hands with soap and water before and during the handling of plants to reduce potential spread between plants."""
+        <br/>4. Wash hands with soap and water before and during the handling of plants to reduce potential spread between plants.""",
+
+         'Wheat___Healthy': """ <b>Crop</b>: Wheat <br/>Disease: No disease<br/>
+
+        <br/><br/> Don't worry. Your crop is healthy. Keep it up !!!""",
+
+    'Wheat___Brown_Rust': """ <b>Crop</b>: Wheat <br/>Disease: Brown Rust<br/>
+        <br/> Cause of disease:
+
+        <br/><br/> Brown rust is caused by the fungus *Puccinia triticina*. It primarily infects leaves and reduces photosynthetic area, leading to reduced grain fill and yield. The disease is favored by moderate temperatures and moisture.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Plant resistant wheat varieties.
+
+        <br/>2. Use crop rotation and avoid continuous wheat planting.
+
+        <br/>3. Apply fungicides at the flag leaf stage if the disease pressure is high and weather conditions are favorable.
+        """,
+
+    'Wheat___Yellow_Rust': """ <b>Crop</b>: Wheat <br/>Disease: Yellow Rust<br/>
+        <br/> Cause of disease:
+
+        <br/><br/> Yellow rust, also known as stripe rust, is caused by *Puccinia striiformis f. sp. tritici*. It develops under cool and moist conditions and appears as yellow stripes of pustules on leaves.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Use resistant varieties.
+
+        <br/>2. Monitor crops regularly for early symptoms.
+
+        <br/>3. Apply fungicides if necessary based on disease forecasting models and field scouting.
+        """,
+
+      'Corn___Common_Rust': """ <b>Crop</b>: Corn <br/>Disease: Common Rust<br/>
+        <br/> Cause of disease:
+
+        <br/><br/>Caused by *Puccinia sorghi*, common rust appears as cinnamon-brown pustules scattered on both leaf surfaces. It thrives in cool, moist conditions.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Use resistant hybrids.
+        <br/>2. Apply fungicides if conditions favor disease development and economic thresholds are met.
+        """,
+
+    'Corn___Gray_Leaf_Spot': """ <b>Crop</b>: Corn <br/>Disease: Gray Leaf Spot<br/>
+        <br/> Cause of disease:
+
+        <br/><br/>Caused by *Cercospora zeae-maydis*, this disease causes rectangular lesions on leaves and thrives in warm, humid conditions.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Rotate crops and practice residue management.
+        <br/>2. Use resistant hybrids and apply fungicides when necessary.
+        """,
+
+    'Corn___Healthy': """ <b>Crop</b>: Corn <br/>Disease: No disease<br/>
+        <br/><br/> Don't worry. Your crop is healthy. Keep it up !!!""",
+
+    'Corn___Northern_Leaf_Blight': """ <b>Crop</b>: Corn <br/>Disease: Northern Leaf Blight<br/>
+        <br/> Cause of disease:
+
+        <br/><br/>Caused by *Exserohilum turcicum*, identified by cigar-shaped lesions. It develops in moderate temperatures and high humidity.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Use resistant hybrids.
+        <br/>2. Apply fungicides when risk and economic thresholds are high.
+        """,
+
+    'Potato___Early_Blight': """ <b>Crop</b>: Potato <br/>Disease: Early Blight<br/>
+        <br/> Cause of disease:
+
+        <br/><br/>Caused by *Alternaria solani*, early blight produces concentric dark lesions on lower leaves first.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Apply fungicides on a preventive schedule.
+        <br/>2. Use certified seed and crop rotation.
+        """,
+
+    'Potato___Late_Blight': """ <b>Crop</b>: Potato <br/>Disease: Late Blight<br/>
+        <br/> Cause of disease:
+
+        <br/><br/>Caused by *Phytophthora infestans*, leads to water-soaked lesions on leaves and stems with white sporulation.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Use resistant varieties and proper fungicide programs.
+        <br/>2. Remove infected debris post-harvest.
+        """,
+
+    'Potato___Healthy': """ <b>Crop</b>: Potato <br/>Disease: No disease<br/>
+        <br/><br/> Don't worry. Your crop is healthy. Keep it up !!!""",
+
+    'Rice___Brown_Spot': """ <b>Crop</b>: Rice <br/>Disease: Brown Spot<br/>
+        <br/> Cause of disease:
+
+        <br/><br/>Caused by *Bipolaris oryzae*, appears as brown lesions on leaves, grains, and sheaths.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Use clean seed and proper fertilization.
+        <br/>2. Apply fungicides if needed.
+        """,
+
+    'Rice___Healthy': """ <b>Crop</b>: Rice <br/>Disease: No disease<br/>
+        <br/><br/> Don't worry. Your crop is healthy. Keep it up !!!""",
+
+    'Rice___Leaf_Blast': """ <b>Crop</b>: Rice <br/>Disease: Leaf Blast<br/>
+        <br/> Cause of disease:
+
+        <br/><br/>Caused by *Magnaporthe oryzae*, leads to spindle-shaped lesions with gray centers and brown margins.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Apply balanced fertilizer and avoid excessive nitrogen.
+        <br/>2. Use resistant varieties and fungicides.
+        """,
+
+    'Rice___Neck_Blast': """ <b>Crop</b>: Rice <br/>Disease: Neck Blast<br/>
+        <br/> Cause of disease:
+
+        <br/><br/>Caused by *Magnaporthe oryzae*, affects panicle neck and can cause blank grains.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Use resistant varieties.
+        <br/>2. Timely fungicide sprays before flowering.
+        """,
+
+    'Sugarcane_Bacterial Blight': """ <b>Crop</b>: Sugarcane <br/>Disease: Bacterial Blight<br/>
+        <br/> Cause of disease:
+
+        <br/><br/>Caused by *Xanthomonas albilineans*, results in white leaf syndrome and stunted growth.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Use disease-free planting material.
+        <br/>2. Rogue infected plants and rotate crops.
+        """,
+
+    'Sugarcane_Healthy': """ <b>Crop</b>: Sugarcane <br/>Disease: No disease<br/>
+        <br/><br/> Don't worry. Your crop is healthy. Keep it up !!!""",
+
+    'Sugarcane_Red Rot': """ <b>Crop</b>: Sugarcane <br/>Disease: Red Rot<br/>
+        <br/> Cause of disease:
+
+        <br/><br/>Caused by *Colletotrichum falcatum*, shows red discoloration and cross-wise white patches inside stalks.
+
+        <br/><br/> How to prevent/cure the disease <br/>
+        <br/>1. Use resistant varieties and healthy seed.
+        <br/>2. Treat seed with fungicide before planting.
+        """   
 }

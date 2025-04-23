@@ -12,11 +12,22 @@ from torchvision import transforms
 from PIL import Image
 from utils.model import ResNet9
 from utils.disease import disease_dic
+import io
+from markupsafe import Markup
+from utils.segment import process_leaf_image
+import cv2
+import numpy as np
+from werkzeug.utils import secure_filename
+import base64
 from utils.fertilizer import fertilizer_dic
 import os
 import logging  # Add logging for debugging
 from flask_cors import CORS
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from pymongo import MongoClient, errors
+from dotenv import load_dotenv
+import sklearn
+print(sklearn.__version__)
 import jwt
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -31,23 +42,35 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__, static_folder='../client/dist', static_url_path='')
 CORS(app, origins=["http://localhost:5173"])
 
-# -------------------------LOADING TRAINED MODELS -----------------------------------------------
+# database connection
+def check_db():
+    try:
+        load_dotenv()
+        mongo_uri = os.getenv('MONGO_URI')
+
+        client  = MongoClient(mongo_uri, serverSelectionTimeoutMS = 5000)
+        # client.admin.command('ping')
+        logging.info("Connected to MongoDB")
+        db_name = "mydatabase"  # Replace with the actual database name you want to use
+        db = client[db_name]  # Access the database
+        collection = db['default_collection']  # Access the collection, it will be created if it doesn't exist
+        return db, collection
+
+    except errors.ServerSelectionTimeoutError as err:
+        logging.error("Failed to connect to MongoDB")    
+        raise err
+    except Exception as e:
+        logging.error(f"Unexpected: {e}")
+        raise e
+
+check_db()
+
 
 # Loading plant disease classification model
-disease_classes = ['Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy', 
-                   'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew', 'Cherry_(including_sour)___healthy',
-                   'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot', 'Corn_(maize)___Common_rust_', 
-                   'Corn_(maize)___Northern_Leaf_Blight', 'Corn_(maize)___healthy', 'Grape___Black_rot', 
-                   'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)', 'Grape___healthy', 
-                   'Orange___Haunglongbing_(Citrus_greening)', 'Peach___Bacterial_spot', 'Peach___healthy',
-                   'Pepper,_bell___Bacterial_spot', 'Pepper,_bell___healthy', 'Potato___Early_blight', 
-                   'Potato___Late_blight', 'Potato___healthy', 'Raspberry___healthy', 'Soybean___healthy', 
-                   'Squash___Powdery_mildew', 'Strawberry___Leaf_scorch', 'Strawberry___healthy', 'Tomato___Bacterial_spot', 
-                   'Tomato___Early_blight', 'Tomato___Late_blight', 'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot',
-                   'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot', 
-                   'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy']
+disease_classes = ['Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy', 'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew', 'Cherry_(including_sour)___healthy', 'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot', 'Corn_(maize)___Common_rust_', 'Corn_(maize)___Northern_Leaf_Blight', 'Corn_(maize)___healthy', 'Corn___Common_Rust', 'Corn___Gray_Leaf_Spot', 'Corn___Healthy', 'Corn___Northern_Leaf_Blight', 'Grape___Black_rot', 'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)', 'Grape___healthy', 'Orange___Haunglongbing_(Citrus_greening)', 'Peach___Bacterial_spot', 'Peach___healthy', 'Pepper,_bell___Bacterial_spot', 'Pepper,_bell___healthy', 'Potato___Early_Blight', 'Potato___Early_blight', 'Potato___Healthy', 'Potato___Late_Blight', 'Potato___Late_blight', 'Potato___healthy', 'Raspberry___healthy', 'Rice___Brown_Spot', 'Rice___Healthy', 'Rice___Leaf_Blast', 'Rice___Neck_Blast', 'Soybean___healthy', 'Squash___Powdery_mildew', 'Strawberry___Leaf_scorch', 'Strawberry___healthy', 'Sugarcane_Bacterial Blight', 'Sugarcane_Healthy', 'Sugarcane_Red Rot', 'Tomato___Bacterial_spot', 'Tomato___Early_blight', 'Tomato___Late_blight', 'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot', 'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot', 'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy', 'Wheat___Brown_Rust', 'Wheat___Healthy', 'Wheat___Yellow_Rust']
+print(len(disease_classes))
 
-disease_model_path = 'models/plant_disease_model.pth'
+disease_model_path = 'models/new-plant-disease-model.pth'
 disease_model = ResNet9(3, len(disease_classes))
 disease_model.load_state_dict(torch.load(disease_model_path, map_location=torch.device('cpu'), weights_only=True))
 disease_model.eval()
@@ -60,6 +83,14 @@ crop_recommendation_model = joblib.load(crop_recommendation_model_path)
 print("Server running on http://localhost:5173")
 
 # ------------------------------------ FUNCTIONS ------------------------------------
+
+# <<<<<<< HEAD
+# Set up logging for debugging
+logging.basicConfig(level=logging.INFO)
+
+# =========================================================================================
+
+# Custom functions for calculations
 
 def weather_fetch(city_name):
     """
@@ -82,22 +113,43 @@ def weather_fetch(city_name):
         logging.error(f"City {city_name} not found!")
         return None
 
-def predict_image(img, model=disease_model):
-    """
-    Transforms image to tensor and predicts disease label.
-    """
-    transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.ToTensor(),
-    ])
-    image = Image.open(io.BytesIO(img))
-    img_t = transform(image)
-    img_u = torch.unsqueeze(img_t, 0)
+# def predict_image(img, model=disease_model):
+#     """
+#     Transforms image to tensor and predicts disease label.
+#     """
+#     transform = transforms.Compose([
+#         transforms.Resize(256),
+#         transforms.ToTensor(),
+#     ])
+#     image = Image.open(io.BytesIO(img))
+#     img_t = transform(image)
+#     img_u = torch.unsqueeze(img_t, 0)
 
-    yb = model(img_u)
-    _, preds = torch.max(yb, dim=1)
-    prediction = disease_classes[preds[0].item()]
-    return prediction
+#     yb = model(img_u)
+#     _, preds = torch.max(yb, dim=1)
+#     prediction = disease_classes[preds[0].item()]
+#     return prediction
+
+def predict_image(img, model=disease_model):
+    transform = transforms.Compose([
+        transforms.Resize((256, 256)),  # Changed from 128 to 256
+        transforms.ToTensor(),
+        transforms.Normalize([0.5]*3, [0.5]*3)
+    ])
+
+    image = Image.open(io.BytesIO(img)).convert('RGB')
+    img_t = transform(image)
+    img_u = img_t.unsqueeze(0)
+
+    model.eval()
+    with torch.no_grad():
+        outputs = model(img_u)
+        probs = torch.softmax(outputs, dim=1)
+        _, preds = torch.max(probs, dim=1)
+
+    # print("Prediction Probabilities:", probs)  # Optional debug
+    return disease_classes[preds.item()]
+
 
 def recommend_fertilizer(N, P, K, crop):
     """
@@ -154,19 +206,155 @@ def crop_recommend():
         return jsonify({"error": str(e)}), 500
         
 # Disease prediction route
+# @app.route('/disease-predict', methods=['POST'])
+# def disease_prediction():
+#     title = 'Cropify - Disease Detection'
+
+#     if request.method == 'POST':
+#         if 'file' not in request.files:
+#             return jsonify({'error': 'No file part in the request'}), 400
+        
+#         file = request.files.get('file')
+#         print(file)
+#         if not file:
+#             return jsonify({'error': 'No file selected'}), 400
+#         try:
+#             img = file.read()
+#             prediction = predict_image(img)
+#             prediction = Markup(str(disease_dic[prediction]))
+#             # segmented_img = process_leaf_image(img)
+#             # print(segmented_img)
+#             return jsonify({'prediction': prediction})
+#         except Exception as e:
+#             logging.error(f"Error during prediction: {e}")
+#             return jsonify({'error': 'Prediction error! Please try again.'})
+
+#     return jsonify({'message': 'GET method not supported'}), 405
+
+# temp implemenation
+def process_leaf_image(image_bytes):
+    """
+    Processes a leaf image from bytes by removing the background and highlighting diseased areas.
+
+    Args:
+        image_bytes (bytes): Image file in bytes.
+
+    Returns:
+        tuple: (background_removed, disease_highlighted)
+    """
+    # Convert bytes to numpy array
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    if image is None:
+        raise ValueError("Error: Unable to decode image")
+
+    # Resize for easier processing
+    image = cv2.resize(image, (600, 400))
+
+    # Apply GrabCut for background removal
+    mask = np.zeros(image.shape[:2], np.uint8)
+    bgd_model = np.zeros((1, 65), np.float64)
+    fgd_model = np.zeros((1, 65), np.float64)
+    rect = (10, 10, image.shape[1] - 10, image.shape[0] - 10)
+
+    cv2.grabCut(image, mask, rect, bgd_model, fgd_model, 5, cv2.GC_INIT_WITH_RECT)
+
+    # Refine the mask
+    mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
+    background_removed = image * mask2[:, :, np.newaxis]
+
+    # Convert to HSV for disease highlighting
+    hsv = cv2.cvtColor(background_removed, cv2.COLOR_BGR2HSV)
+
+    # Define color range for disease detection (brown/yellow patches)
+    lower_disease = np.array([10, 100, 20])
+    upper_disease = np.array([30, 255, 255])
+    disease_mask = cv2.inRange(hsv, lower_disease, upper_disease)
+
+    # Apply morphological operations to reduce noise
+    kernel = np.ones((5, 5), np.uint8)
+    disease_mask = cv2.morphologyEx(disease_mask, cv2.MORPH_CLOSE, kernel)
+
+    # Highlight diseased areas in red
+    disease_highlighted = background_removed.copy()
+    disease_highlighted[disease_mask > 0] = [0, 0, 255]
+
+    return background_removed, disease_highlighted
+
 @app.route('/disease-predict', methods=['POST'])
 def disease_prediction():
+    """
+    Endpoint to predict disease from an uploaded crop image.
+
+    Returns:
+        JSON response containing the prediction and processed images.
+    """
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+
+    file = request.files.get('file')
+    if not file:
+        return jsonify({'error': 'No file selected'}), 400
+
     try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file part in the request'}), 400
-        file = request.files['file']
-        if not file:
-            return jsonify({'error': 'No file selected'}), 400
+        img_bytes = file.read()
 
-        img = file.read()
-        prediction = predict_image(img)
-        return jsonify({'prediction': disease_dic.get(prediction, "Unknown disease")})
+        prediction = predict_image(img_bytes)
+        prediction = Markup(str(disease_dic[prediction]))
+        
+        # Process the leaf image
+        bg_removed, disease_highlighted = process_leaf_image(img_bytes)
 
+        # Encode images to Base64 for response
+        _, buffer_bg = cv2.imencode('.jpg', bg_removed)
+        _, buffer_disease = cv2.imencode('.jpg', disease_highlighted)
+
+        # bg_removed_base64 = buffer_bg.tobytes()
+        # disease_highlighted_base64 = buffer_disease.tobytes()
+
+        bg_removed_base64 = base64.b64encode(buffer_bg).decode('utf-8')
+        disease_highlighted_base64 = base64.b64encode(buffer_disease).decode('utf-8')
+
+        return jsonify({
+            'prediction': prediction,  # Disease name
+            'background_removed': f"data:image/jpeg;base64,{bg_removed_base64}",
+            'disease_highlighted': f"data:image/jpeg;base64,{disease_highlighted_base64}"
+        })
+
+    
+    
+    except Exception as e:
+        logging.error(f"Error during prediction: {e}")
+        return jsonify({'error': 'Prediction error! Please try again.'}), 500
+
+###CHAT ROUTE 
+# @app.route('/chat', methods=['POST'])
+# def chat():
+
+def recommend_fertilizer(N, P, K, crop):
+# >>>>>>> 2244d8ad5f6849224f622274fe2b0b1d0094585c
+    try:
+        recommendation = ""
+        
+        # Determine if N, P, K are high or low
+        if N > 50:  # Adjust threshold based on your data
+            recommendation += fertilizer_dic.get('NHigh', "No recommendation available for high Nitrogen.")
+        else:
+            recommendation += fertilizer_dic.get('Nlow', "No recommendation available for low Nitrogen.")
+        
+        if P > 50:  # Adjust threshold based on your data
+            recommendation += "<br/><br/>" + fertilizer_dic.get('PHigh', "No recommendation available for high Phosphorus.")
+        else:
+            recommendation += "<br/><br/>" + fertilizer_dic.get('Plow', "No recommendation available for low Phosphorus.")
+        
+        if K > 50:  # Adjust threshold based on your data
+            recommendation += "<br/><br/>" + fertilizer_dic.get('KHigh', "No recommendation available for high Potassium.")
+        else:
+            recommendation += "<br/><br/>" + fertilizer_dic.get('Klow', "No recommendation available for low Potassium.")
+        
+        return recommendation.strip() if recommendation else f"Your soil has optimal nutrient levels for {crop}."
+    
     except Exception as e:
         logging.error(f"Error in disease prediction: {e}")
         return jsonify({'error': 'Prediction error!'}), 500
@@ -178,8 +366,59 @@ def fertilizer_recommend():
         data = request.json
         return jsonify({'recommendation': recommend_fertilizer(data['N'], data['P'], data['K'], data['crop'])})
     except Exception as e:
-        logging.error(f"Error in fertilizer recommendation: {e}")
-        return jsonify({'error': 'Invalid input!'}), 400
+        logging.error(f"Error processing request: {str(e)}")
+        return jsonify({"error": "Error generating recommendation."}), 500
+
+@app.route('/crop-recommend', methods=['POST'])
+def crop_prediction():
+    try:
+        data = request.json
+        N = int(data.get("N", 0))
+        P = int(data.get("P", 0))
+        K = int(data.get("K", 0))
+        temperature = float(data.get("temperature", 0))
+        humidity = float(data.get("humidity", 0))
+        ph = float(data.get("ph", 0))
+        rainfall = float(data.get("rainfall", 0))
+
+        columns = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
+        data = pd.DataFrame([[N, P, K, temperature, humidity, ph, rainfall]], columns=columns)
+        prediction = crop_recommendation_model.predict(data)[0]
+
+        return jsonify({'prediction': prediction})
+    except Exception as e:
+        logging.error(f"Error processing request: {str(e)}")
+        return jsonify({"error": "Error generating crop recommendation."}), 500
+
+@app.route('/predict_severity', methods=['POST'])
+def predict_severity():
+    try:
+        model = joblib.load("models/severity_encoders/severity_model.pkl")
+        severity_encoder = joblib.load("models/severity_encoders/severity_label_encoder.pkl")
+        disease_encoder = joblib.load("models/severity_encoders/disease_label_encoder.pkl")
+        
+        data = request.get_json()
+        
+        temperature = data["Temperature"]
+        humidity = data["Humidity"]
+        soil_ph = data["Soil_pH"]
+        moisture = data["Moisture"]
+        nitrogen = data["Nitrogen"]
+        disease = data["Disease"]
+
+        print(data)
+        
+        disease_encoded = disease_encoder.transform([disease])[0]
+        
+        features = np.array([[temperature, humidity, soil_ph, moisture, nitrogen, disease_encoded]])
+        
+        severity_encoded = model.predict(features)[0]
+        
+        severity = severity_encoder.inverse_transform([severity_encoded])[0]
+        
+        return jsonify({"severity": severity})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
     
 # JWT config
 JWT_SECRET = os.getenv("JWT_SECRET", "defaultsecret")
