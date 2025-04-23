@@ -8,6 +8,7 @@ function Navbar() {
   const isDisease = useMatch("/disease-prediction");
   const isRecords = useMatch("/records");
   const isFertilizer = useMatch("/fertilizer-recommendation");
+  const isLoginForm = useMatch("/user-login");
 
   return (
     <div className="fixed top-4 left-4 right-4 rounded-lg shadow-mg flex justify-center items-center h-20 bg-white bg-opacity-75 backdrop-filter backdrop-blur-md p-4 z-50">
@@ -42,12 +43,12 @@ function Navbar() {
           Disease
         </Link>
         <Link
-          to="/fertilizer-recommendation"
+          to="/login"
           className={`font-poppins text-xl font-bold hover:text-yellow-600 cursor-pointer ${
-            isDisease ? "text-yellow-600" : ""
+            isFertilizer ? "text-yellow-600" : ""
           }`}
         >
-          Fertilizer 
+          Fertilizer
         </Link>
         <Link
           to="/records"
@@ -56,6 +57,14 @@ function Navbar() {
           }`}
         >
           Records
+        </Link>
+        <Link
+          to="/user-login"
+          className={`font-poppins text-xl font-bold hover:text-yellow-600 cursor-pointer ${
+            isLoginForm ? "text-yellow-600" : ""
+          }`}
+        >
+          Login
         </Link>
       </div>
     </div>

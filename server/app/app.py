@@ -24,6 +24,10 @@ import os
 import logging  # Add logging for debugging
 from flask_cors import CORS
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from pymongo import MongoClient, errors
+from dotenv import load_dotenv
+import sklearn
+print(sklearn.__version__)
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -32,23 +36,35 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__, static_folder='../client/dist', static_url_path='')
 CORS(app, origins=["http://localhost:5173"])
 
-# -------------------------LOADING TRAINED MODELS -----------------------------------------------
+# database connection
+def check_db():
+    try:
+        load_dotenv()
+        mongo_uri = os.getenv('MONGO_URI')
+
+        client  = MongoClient(mongo_uri, serverSelectionTimeoutMS = 5000)
+        # client.admin.command('ping')
+        logging.info("Connected to MongoDB")
+        db_name = "mydatabase"  # Replace with the actual database name you want to use
+        db = client[db_name]  # Access the database
+        collection = db['default_collection']  # Access the collection, it will be created if it doesn't exist
+        return db, collection
+
+    except errors.ServerSelectionTimeoutError as err:
+        logging.error("Failed to connect to MongoDB")    
+        raise err
+    except Exception as e:
+        logging.error(f"Unexpected: {e}")
+        raise e
+
+check_db()
+
 
 # Loading plant disease classification model
-disease_classes = ['Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy', 
-                   'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew', 'Cherry_(including_sour)___healthy',
-                   'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot', 'Corn_(maize)___Common_rust_', 
-                   'Corn_(maize)___Northern_Leaf_Blight', 'Corn_(maize)___healthy', 'Grape___Black_rot', 
-                   'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)', 'Grape___healthy', 
-                   'Orange___Haunglongbing_(Citrus_greening)', 'Peach___Bacterial_spot', 'Peach___healthy',
-                   'Pepper,_bell___Bacterial_spot', 'Pepper,_bell___healthy', 'Potato___Early_blight', 
-                   'Potato___Late_blight', 'Potato___healthy', 'Raspberry___healthy', 'Soybean___healthy', 
-                   'Squash___Powdery_mildew', 'Strawberry___Leaf_scorch', 'Strawberry___healthy', 'Tomato___Bacterial_spot', 
-                   'Tomato___Early_blight', 'Tomato___Late_blight', 'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot',
-                   'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot', 
-                   'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy']
+disease_classes = ['Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy', 'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew', 'Cherry_(including_sour)___healthy', 'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot', 'Corn_(maize)___Common_rust_', 'Corn_(maize)___Northern_Leaf_Blight', 'Corn_(maize)___healthy', 'Corn___Common_Rust', 'Corn___Gray_Leaf_Spot', 'Corn___Healthy', 'Corn___Northern_Leaf_Blight', 'Grape___Black_rot', 'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)', 'Grape___healthy', 'Orange___Haunglongbing_(Citrus_greening)', 'Peach___Bacterial_spot', 'Peach___healthy', 'Pepper,_bell___Bacterial_spot', 'Pepper,_bell___healthy', 'Potato___Early_Blight', 'Potato___Early_blight', 'Potato___Healthy', 'Potato___Late_Blight', 'Potato___Late_blight', 'Potato___healthy', 'Raspberry___healthy', 'Rice___Brown_Spot', 'Rice___Healthy', 'Rice___Leaf_Blast', 'Rice___Neck_Blast', 'Soybean___healthy', 'Squash___Powdery_mildew', 'Strawberry___Leaf_scorch', 'Strawberry___healthy', 'Sugarcane_Bacterial Blight', 'Sugarcane_Healthy', 'Sugarcane_Red Rot', 'Tomato___Bacterial_spot', 'Tomato___Early_blight', 'Tomato___Late_blight', 'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot', 'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot', 'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy', 'Wheat___Brown_Rust', 'Wheat___Healthy', 'Wheat___Yellow_Rust']
+print(len(disease_classes))
 
-disease_model_path = 'models/plant_disease_model.pth'
+disease_model_path = 'models/new-plant-disease-model.pth'
 disease_model = ResNet9(3, len(disease_classes))
 disease_model.load_state_dict(torch.load(disease_model_path, map_location=torch.device('cpu'), weights_only=True))
 disease_model.eval()
@@ -91,22 +107,43 @@ def weather_fetch(city_name):
         logging.error(f"City {city_name} not found!")
         return None
 
-def predict_image(img, model=disease_model):
-    """
-    Transforms image to tensor and predicts disease label.
-    """
-    transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.ToTensor(),
-    ])
-    image = Image.open(io.BytesIO(img))
-    img_t = transform(image)
-    img_u = torch.unsqueeze(img_t, 0)
+# def predict_image(img, model=disease_model):
+#     """
+#     Transforms image to tensor and predicts disease label.
+#     """
+#     transform = transforms.Compose([
+#         transforms.Resize(256),
+#         transforms.ToTensor(),
+#     ])
+#     image = Image.open(io.BytesIO(img))
+#     img_t = transform(image)
+#     img_u = torch.unsqueeze(img_t, 0)
 
-    yb = model(img_u)
-    _, preds = torch.max(yb, dim=1)
-    prediction = disease_classes[preds[0].item()]
-    return prediction
+#     yb = model(img_u)
+#     _, preds = torch.max(yb, dim=1)
+#     prediction = disease_classes[preds[0].item()]
+#     return prediction
+
+def predict_image(img, model=disease_model):
+    transform = transforms.Compose([
+        transforms.Resize((256, 256)),  # Changed from 128 to 256
+        transforms.ToTensor(),
+        transforms.Normalize([0.5]*3, [0.5]*3)
+    ])
+
+    image = Image.open(io.BytesIO(img)).convert('RGB')
+    img_t = transform(image)
+    img_u = img_t.unsqueeze(0)
+
+    model.eval()
+    with torch.no_grad():
+        outputs = model(img_u)
+        probs = torch.softmax(outputs, dim=1)
+        _, preds = torch.max(probs, dim=1)
+
+    # print("Prediction Probabilities:", probs)  # Optional debug
+    return disease_classes[preds.item()]
+
 
 def recommend_fertilizer(N, P, K, crop):
     """
@@ -326,8 +363,8 @@ def fertilizer_recommend():
         logging.error(f"Error processing request: {str(e)}")
         return jsonify({"error": "Error generating recommendation."}), 500
 
-# @app.route('/crop-recommend', methods=['POST'])
-# def crop_prediction():
+@app.route('/crop-recommend', methods=['POST'])
+def crop_prediction():
     try:
         data = request.json
         N = int(data.get("N", 0))
@@ -346,6 +383,36 @@ def fertilizer_recommend():
     except Exception as e:
         logging.error(f"Error processing request: {str(e)}")
         return jsonify({"error": "Error generating crop recommendation."}), 500
+
+@app.route('/predict_severity', methods=['POST'])
+def predict_severity():
+    try:
+        model = joblib.load("models/severity_encoders/severity_model.pkl")
+        severity_encoder = joblib.load("models/severity_encoders/severity_label_encoder.pkl")
+        disease_encoder = joblib.load("models/severity_encoders/disease_label_encoder.pkl")
+        
+        data = request.get_json()
+        
+        temperature = data["Temperature"]
+        humidity = data["Humidity"]
+        soil_ph = data["Soil_pH"]
+        moisture = data["Moisture"]
+        nitrogen = data["Nitrogen"]
+        disease = data["Disease"]
+
+        print(data)
+        
+        disease_encoded = disease_encoder.transform([disease])[0]
+        
+        features = np.array([[temperature, humidity, soil_ph, moisture, nitrogen, disease_encoded]])
+        
+        severity_encoded = model.predict(features)[0]
+        
+        severity = severity_encoder.inverse_transform([severity_encoded])[0]
+        
+        return jsonify({"severity": severity})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 # Run Flask App
 if __name__ == '__main__':
