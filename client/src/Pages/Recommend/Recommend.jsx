@@ -41,15 +41,7 @@ function Recommend() {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !nitrogen ||
-      !phosphorous ||
-      !potassium ||
-      !ph ||
-      !rainfall ||
-      !state ||
-      !city
-    ) {
+    if (!nitrogen || !phosphorous || !potassium || !ph || !rainfall || !state || !city) {
       toast.error("Please fill all the fields", {
         position: "top-right",
         autoClose: 5000,
@@ -64,27 +56,28 @@ function Recommend() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("N", nitrogen);
-    formData.append("P", phosphorous);
-    formData.append("K", potassium);
-    formData.append("ph", ph);
-    formData.append("rainfall", rainfall);
-    formData.append("state", state);
-    formData.append("city", city);
+    const requestData = {
+      N: nitrogen,
+      P: phosphorous,
+      K: potassium,
+      ph: ph,
+      rainfall: rainfall,
+      state: state,
+      city: city,
+    };
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/crop-recommend",
-        formData
-      );
+      const response = await axios.post("http://localhost:5000/crop-recommend", requestData, {
+        headers: { "Content-Type": "application/json" }, // Ensure JSON format
+      });
+
       if (response.status === 200) {
-        setRecommendedCrop(response.data.prediction); 
-        setIsModalOpen(true); 
+        setRecommendedCrop(response.data.prediction);
+        setIsModalOpen(true);
         toast.success("Crop recommended successfully");
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Error in recommending crop");
     }
   };
@@ -157,26 +150,13 @@ function Recommend() {
             placeholder="Enter Rainfall"
           />
         </div>
-        <SelectInput
-          state={state}
-          city={city}
-          setState={setState}
-          setCity={setCity}
-        />
-        <button
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full"
-          type="submit"
-        >
+        <SelectInput state={state} city={city} setState={setState} setCity={setCity} />
+        <button className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full" type="submit">
           Recommend Crop
         </button>
       </form>
 
-      {/* Modal for Recommendation Result */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        recommendation={recommendedCrop}
-      />
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} recommendation={recommendedCrop} />
     </div>
   );
 }

@@ -87,11 +87,11 @@ const FertilizerRecomm = () => {
         </form>
 
         {recommendation && (
-          <div className="mt-6 p-4 bg-green-100 border border-green-400 rounded-lg">
-            <h3 className="font-semibold text-green-700">Recommendation:</h3>
-            <p>{recommendation}</p>
-          </div>
-        )}
+  <div className="mt-6 p-4 bg-green-100 border border-green-400 rounded-lg">
+    <h3 className="font-semibold text-green-700">Recommendation:</h3>
+    <p dangerouslySetInnerHTML={{ __html: recommendation }} />
+  </div>
+)}
 
         {error && (
           <div className="mt-6 p-4 bg-red-100 border border-red-400 rounded-lg">
