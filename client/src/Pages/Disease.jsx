@@ -6,49 +6,75 @@ import axios from 'axios';
 import DiseasePred from '../components/DiseasePred';
 
 function Disease() {
-  const [image, setImage] = useState("")
-  const [preview, setPreview ] = useState("")
-  const [isPredicted, setIsPredicted] = useState(false)
-  const [response, setResponse] = useState("")
-  
+  const [image, setImage] = useState("");
+  const [preview, setPreview] = useState("");
+  const [isPredicted, setIsPredicted] = useState(false);
+  const [response, setResponse] = useState("");
+
+  const toBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
 
   const handleInputImage = (e) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      console.log(file)
-      setPreview(URL.createObjectURL(file))
+      const file = e.target.files[0];
+      setPreview(URL.createObjectURL(file));
       setImage(file);
     }
   };
 
   const handleImageSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if(image === "") {
-       toast.error("Please provide proper disease image")
-       return
+    if (!image) {
+      toast.error("Please provide proper disease image");
+      return;
     }
-    
-    const formData = new FormData()
-    formData.append("file", image)
+
+    const formData = new FormData();
+    formData.append("file", image);
 
     try {
       const response = await axios.post("http://localhost:5000/disease-predict", formData, {
         headers: {
           "Content-Type": "multipart/form-data"
         }
-      })
-      if(response.status === 200) {
-        console.log(response.data.prediction)
-        setIsPredicted(true)
-        setResponse(response.data)
-        toast.success("Disease predicted successfully")
+      });
+
+      if (response.status === 200) {
+        const data = response.data;
+        setIsPredicted(true);
+        setResponse(data);
+        toast.success("Disease predicted successfully");
+
+        const generate = window.confirm("Do you want to generate a disease report?");
+        if (!generate) return;
+
+        const base64Image = await toBase64(image);
+
+        const reportData = {
+          name: localStorage.getItem("username") || "Unknown User",
+          location: "Versova, Mumbai",
+          time: new Date().toISOString(),
+          plantType: data.plantType || "Unknown Plant",
+          disease: data.prediction,
+          cause: data.cause || "Not specified",
+          imageUrl: base64Image,
+          severity: data.severity || 68
+        };
+
+        await axios.post("http://localhost:5000/generate-report", reportData);
+        toast.success("Report submitted successfully");
       }
     } catch (error) {
-       console.log(error)
-        toast.error("Error in predicting disease")
+      console.log(error);
+      toast.error("Error in predicting disease");
     }
-  }
+  };
 
   const handleRemoveImage = () => {
     setPreview("");
@@ -65,13 +91,13 @@ function Disease() {
                 <FaTimes className="fill-yellow-300" />
               </span>
               <img src={preview} alt="Uploaded" className="h-full w-full object-cover rounded-md" />
-              <p className="text-yellow-300 mt-2">{image.file?.name || ""}</p>
+              <p className="text-yellow-300 mt-2">{image.name || ""}</p>
             </div>
           ) : (
             <label className="flex flex-col justify-center items-center cursor-pointer">
               <BsCloudArrowUpFill size={100} className="text-gray-600 mb-4" />
               <p className="text-amber-800 text-2xl font-poppins font-bold text-center">What is the Disease?</p>
-              <input type="file" accept="image/*" value={image} className="hidden" onChange={handleInputImage} />
+              <input type="file" accept="image/*" className="hidden" onChange={handleInputImage} />
             </label>
           )}
         </div>

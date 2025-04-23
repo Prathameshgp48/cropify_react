@@ -7,4 +7,4 @@ load_dotenv()
 client = MongoClient(os.getenv("MONGO_URI"))
 db = client["CropifyDB"]
 users_collection = db["users"]
-reports_collection = db["disease_reports"]
+reports_collection = db["reports"]

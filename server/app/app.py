@@ -21,6 +21,8 @@ import jwt
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import users_collection
+from config import reports_collection
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -219,6 +221,33 @@ def login():
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm='HS256')
     return jsonify({'token': token}), 200
+
+@app.route('/generate-report', methods=['POST'])
+def generate_report():
+    try:
+        data = request.get_json()  # ✅ Fix: Use get_json(), not request.json()
+
+        # Log or print the received report data for debugging
+        logging.info(f"Received report data: {data}")
+        
+        # Save report data to MongoDB
+        reports_collection.insert_one(data)
+
+        return jsonify({"message": "Report received successfully"}), 200
+
+    except Exception as e:
+        logging.error(f"Error while generating report: {e}")
+        return jsonify({"error": "Failed to process report"}), 500
+
+@app.route('/get-reports', methods=['GET'])
+def get_reports():
+    try:
+        reports = list(reports_collection.find({}, {"_id": 0}))  # remove Mongo _id for clean frontend use
+        return jsonify(reports), 200
+    except Exception as e:
+        logging.error(f"Error fetching reports: {e}")
+        return jsonify({"error": "Unable to fetch reports"}), 500
+
 
 # Run Flask App
 if __name__ == '__main__':
