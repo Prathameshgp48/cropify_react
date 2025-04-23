@@ -17,6 +17,10 @@ import os
 import logging  # Add logging for debugging
 from flask_cors import CORS
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import jwt
+import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from config import users_collection
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -174,6 +178,47 @@ def fertilizer_recommend():
     except Exception as e:
         logging.error(f"Error in fertilizer recommendation: {e}")
         return jsonify({'error': 'Invalid input!'}), 400
+    
+# JWT config
+JWT_SECRET = os.getenv("JWT_SECRET", "defaultsecret")
+
+# Signup route
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.json
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+
+    if users_collection.find_one({'email': email}):
+        return jsonify({'error': 'Email already registered'}), 409
+
+    hashed_pw = generate_password_hash(password)
+    users_collection.insert_one({
+        'name': name,
+        'email': email,
+        'password': hashed_pw
+    })
+
+    return jsonify({'message': 'Signup successful'}), 201
+
+# Login route
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+
+    user = users_collection.find_one({'email': email})
+    if not user or not check_password_hash(user['password'], password):
+        return jsonify({'error': 'Invalid email or password'}), 401
+
+    payload = {
+        'user_id': str(user['_id']),
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1)
+    }
+    token = jwt.encode(payload, JWT_SECRET, algorithm='HS256')
+    return jsonify({'token': token}), 200
 
 # Run Flask App
 if __name__ == '__main__':

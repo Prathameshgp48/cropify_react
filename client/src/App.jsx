@@ -9,6 +9,7 @@ import Records from "./Pages/Records.jsx";
 import 'react-toastify/dist/ReactToastify.css';
 import { Bounce, ToastContainer } from "react-toastify";
 import FertilizerRecomm from "./Pages/FertilizerRecomm.jsx";
+import Login from "./Pages/Login.jsx";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/disease-prediction" element={<Disease />} />        
         <Route path="/records" element={<Records/>}/>
         <Route path="/fertilizer-recommendation" element={<FertilizerRecomm />}/>
+        <Route path="/login" element={<Login />}/>
       </Routes>
       <ToastContainer
           position="top-right"
